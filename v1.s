@@ -2,11 +2,14 @@
     N: .space 4
     v: .space 1024
     i: .space 4
+    nr: .space 4
     descriptor: .space 4
     dimensiune: .space 4
-    formatScanf: .asciz "%d"
-    formatPrintf: .asciz "%d "
-    endline: .asciz "\n"
+    desc_id: .space 256
+    p_poz: .space 256
+    u_poz: .space 256
+    formatScanf: .asciz "%ld"
+    formatPrintf_ADD: .asciz "%ld: (%ld, %ld)\n"
 
 .text
 
@@ -20,6 +23,11 @@ ADD:
     push $formatScanf
     call scanf
     add $8,%esp
+    
+    lea desc_id, %edi
+    movl nr, %ecx
+    movl descriptor, %edx
+    mov %edx, (%edi, %ecx, 4)
 
     pushl $dimensiune
     push $formatScanf
@@ -30,24 +38,38 @@ ADD:
     movl dimensiune, %eax
     movl $8, %ebx
     divl %ebx 
+
+    cmp $0, %edx
+    je not_inc
+    
     inc %eax
     
-    lea v, %edi
-    movl i, %ecx
-    addl %ecx, %eax
+    not_inc:
+        movl i, %ecx
+        addl %ecx, %eax
+
+        lea p_poz, %edi
+        movl nr, %edx
+        mov %ecx, (%edi, %edx, 4)
 
     for_ADD:
         cmp %eax, %ecx
         je exit
         
+        lea v, %edi
         movl descriptor, %ebx
         movl %ebx, (%edi, %ecx, 4)
+
+        lea u_poz, %edi
+        movl nr, %edx
+        mov %ecx, (%edi, %edx, 4)
 
         inc %ecx
         jmp for_ADD
 
     exit:
-
+        
+        incl nr
         movl %ecx, i
         popl %esp
         popl %edi
@@ -65,36 +87,45 @@ main:
 
     xor %ecx, %ecx
     movl $0, i
+    movl $0, nr
 for: 
     cmp N, %ecx
     je continue
-
-    push %eax
+    
     push %ecx
+    push %eax
     push %edx
     call ADD
     pop %edx
-    pop %ecx
     pop %eax
+    pop %ecx
 
     inc %ecx
     jmp for
 
 continue:
-    lea v, %edi
     xor %ecx, %ecx   
 
 afisare_ADD:
-    cmp i, %ecx
-    je endline_ADD
+    cmp nr, %ecx
+    je et_exit
+ 
+    lea desc_id, %edi   #descriptor
+    mov (%edi, %ecx, 4), %eax 
 
-    mov (%edi, %ecx, 4), %eax
+    lea p_poz, %edi   #capatul din stanga
+    mov (%edi, %ecx, 4), %ebx
+
+    lea u_poz, %edi   #capatul din dreapta
+    mov (%edi, %ecx, 4), %edx
+    
     push %ecx
+    push %edx
+    push %ebx
     push %eax
-    push $formatPrintf
+    push $formatPrintf_ADD
     call printf
-    add $4, %esp
-    pop %eax
+    add $16, %esp
     pop %ecx
     
     push %ecx
@@ -105,13 +136,6 @@ afisare_ADD:
 
     inc %ecx
     jmp afisare_ADD
-
-endline_ADD:
-    mov $4, %eax
-    mov $1, %ebx
-    mov $endline, %ecx
-    mov $2, %edx
-    int $0x80
 
 et_exit:
     mov $1, %eax
