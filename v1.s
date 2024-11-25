@@ -99,6 +99,9 @@ GET:
     for_GET:
         cmp descriptor, %eax
         je afisare_GET
+        
+        cmp $256, %eax
+        je afisare_NULL
 
         inc %ecx
         mov (%edi, %ecx, 4), %eax
@@ -117,7 +120,19 @@ GET:
         push $formatPrintf_GET
         call printf
         add $12, %esp
+
+        jmp exit_GET
     
+    afisare_NULL:
+        xor %eax, %eax
+        xor %ebx, %ebx
+        
+        push %eax
+        push %ebx
+        push $formatPrintf_GET
+        call printf
+        add $12, %esp
+
     exit_GET:
         pop %ebp
         pop %edi
@@ -195,7 +210,7 @@ main_ADD:
 
     afisare_ADD:
         cmp nr, %ecx
-        je exit_op
+        je limit_ADD
  
         lea desc_arr, %edi   #descriptor
         mov (%edi, %ecx, 4), %eax 
@@ -223,6 +238,14 @@ main_ADD:
 
         inc %ecx
         jmp afisare_ADD
+    
+    limit_ADD:
+        movl nr, %ecx
+        inc %ecx
+        lea desc_arr, %edi
+        movl $256, (%edi, %ecx, 4)
+        
+        jmp exit_op
 
 main_GET:
     push %ecx
