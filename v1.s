@@ -5,7 +5,7 @@
     nr: .space 4
     descriptor: .space 4
     dimensiune: .space 4
-    desc_id: .space 256
+    desc_arr: .space 256
     p_poz: .space 256
     u_poz: .space 256
     formatScanf: .asciz "%ld"
@@ -24,7 +24,7 @@ ADD:
     call scanf
     add $8,%esp
     
-    lea desc_id, %edi
+    lea desc_arr, %edi
     movl nr, %ecx
     movl descriptor, %edx
     mov %edx, (%edi, %ecx, 4)
@@ -110,7 +110,7 @@ afisare_ADD:
     cmp nr, %ecx
     je et_exit
  
-    lea desc_id, %edi   #descriptor
+    lea desc_arr, %edi   #descriptor
     mov (%edi, %ecx, 4), %eax 
 
     lea p_poz, %edi   #capatul din stanga
