@@ -12,6 +12,7 @@
     formatScanf: .asciz "%ld"
     formatPrintf: .asciz "%ld: (%ld, %ld)\n"
     formatPrintf_GET: .asciz "(%ld, %ld)\n"
+    formatPrintf_EROARE: .asciz "Operatie invalida!\n"
 
 .text
 
@@ -203,9 +204,13 @@ main:
 
         #cmp $4, %eax
         #je main_DEFRAGMENTATION
-
-        cmp $4, %eax
-        jg et_exit
+        
+        push %ecx
+        push $formatPrintf_EROARE
+        call printf
+        add $4, %esp
+        pop %ecx
+        jmp for_main
         
         exit_op:
             incl j
@@ -349,6 +354,7 @@ main_DELETE:
             inc %ecx
             jmp afisare_DELETE
         
+
 et_exit:
     mov $1, %eax
     xor %ebx, %ebx
