@@ -349,7 +349,6 @@ main_DELETE:
             inc %ecx
             jmp afisare_DELETE
         
-
 et_exit:
     mov $1, %eax
     xor %ebx, %ebx
