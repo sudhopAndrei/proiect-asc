@@ -10,7 +10,7 @@
     descriptor: .space 4
     dimensiune: .space 4
     formatScanf: .asciz "%ld"
-    formatPrintf_ADD: .asciz "%ld: (%ld, %ld)\n"
+    formatPrintf: .asciz "%ld: (%ld, %ld)\n"
     formatPrintf_GET: .asciz "(%ld, %ld)\n"
 
 .text
@@ -134,6 +134,41 @@ GET:
 
         ret
 
+DELETE:
+    push %ebx
+    push %edi
+    push %ebp
+    mov %esp, %ebp
+
+    push $descriptor
+    push $formatScanf
+    call scanf
+    add $8, %esp
+
+    lea v, %edi
+    xor %ecx, %ecx
+
+    for_DELETE:
+        mov (%edi, %ecx, 4), %eax
+        cmp descriptor, %eax
+        jne not_equal_DELETE
+
+        xor %eax, %eax
+        mov %eax, (%edi, %ecx, 4)
+
+        not_equal_DELETE:
+            cmp $256, %eax
+            je exit_DELETE
+            
+            inc %ecx
+            jmp for_DELETE
+
+    exit_DELETE:
+        pop %ebp
+        pop %edi
+        pop %ebx
+
+        ret
     
 .global main
 
@@ -163,8 +198,8 @@ main:
         cmp $2, %eax
         je main_GET
 
-        #cmp $3, %eax
-        #je main_DELETE
+        cmp $3, %eax
+        je main_DELETE
 
         #cmp $4, %eax
         #je main_DEFRAGMENTATION
@@ -213,7 +248,10 @@ main_ADD:
 
         cmp %eax, %ebx
         je equal_ADD_main
-
+        
+        cmp $0, %eax
+        je zero_ADD
+        
         movl %ecx, u
         movl p, %eax
         mov (%edi, %ecx, 4), %ebx
@@ -222,7 +260,7 @@ main_ADD:
         push u
         push %eax
         push %ebx
-        push $formatPrintf_ADD
+        push $formatPrintf
         call printf
         add $16, %esp
         pop %ecx
@@ -233,8 +271,9 @@ main_ADD:
         add $4, %esp
         pop %ecx
         
-        movl %ecx, p
-        incl p
+        zero_ADD: 
+            movl %ecx, p
+            incl p
 
         equal_ADD_main: 
             inc %ecx
@@ -258,6 +297,58 @@ main_GET:
     pop %ecx
 
     jmp exit_op
+
+main_DELETE:
+    push %ecx
+    push %eax
+    push %edx
+    call DELETE
+    pop %edx
+    pop %eax
+    pop %ecx
+    
+    xor %ecx, %ecx
+    
+    afisare_DELETE:
+        cmp i, %ecx
+        je exit_op
+        
+        mov (%edi, %ecx, 4), %eax
+        mov 4(%edi, %ecx, 4), %ebx
+
+        cmp %eax, %ebx
+        je equal_DELETE_main
+        
+        cmp $0, %eax
+        je zero_DELETE
+        
+        movl %ecx, u
+        movl p, %eax
+        mov (%edi, %ecx, 4), %ebx
+
+        push %ecx
+        push u
+        push %eax
+        push %ebx
+        push $formatPrintf
+        call printf
+        add $16, %esp
+        pop %ecx
+    
+        push %ecx
+        pushl $0
+        call fflush
+        add $4, %esp
+        pop %ecx
+        
+        zero_DELETE: 
+            movl %ecx, p
+            incl p
+
+        equal_DELETE_main: 
+            inc %ecx
+            jmp afisare_DELETE
+        
 
 et_exit:
     mov $1, %eax
