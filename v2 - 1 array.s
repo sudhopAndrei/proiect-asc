@@ -43,23 +43,44 @@ ADD:
     inc %eax
     
     not_inc:
-        movl i, %ecx
-        addl %ecx, %eax
+        mov $0, %edx
+        lea v, %edi
 
     for_ADD:
-        cmp %eax, %ecx
-        je exit_ADD
+        mov (%edi, %edx, 4), %ebx
+        cmp $256, %ebx
+        je ADD_256
         
-        lea v, %edi
-        movl descriptor, %ebx
-        movl %ebx, (%edi, %ecx, 4)
-
-        inc %ecx
+        inc %edx
         jmp for_ADD
+
+        ADD_256:
+            movl i, %ecx
+            addl %ecx, %eax
+
+            for_256:
+                cmp %eax, %ecx
+                je continue_for_256
+        
+                lea v, %edi
+                movl descriptor, %ebx
+                movl %ebx, (%edi, %ecx, 4)
+
+                inc %ecx
+                jmp for_256
+           
+            continue_for_256:
+                movl %ecx, i
+
+                inc %ecx
+                lea v, %edi
+                movl $256, (%edi, %ecx, 4)
+            
+                jmp exit_ADD    
+        
 
     exit_ADD:
         
-        movl %ecx, i
         popl %ebp
         popl %edi
         popl %ebx
@@ -174,6 +195,10 @@ DELETE:
 .global main
 
 main:
+    xor %ecx, %ecx
+    lea v, %edi
+    movl $256, (%edi, %ecx, 4)
+
     pushl $O
     push $formatScanf
     call scanf
@@ -246,7 +271,7 @@ main_ADD:
 
     afisare_ADD:
         cmp i, %ecx
-        je limit_ADD
+        je exit_op
         
         mov (%edi, %ecx, 4), %eax
         mov 4(%edi, %ecx, 4), %ebx
@@ -283,14 +308,7 @@ main_ADD:
         equal_ADD_main: 
             inc %ecx
             jmp afisare_ADD
-    
-    limit_ADD:
-        movl i, %ecx
-        inc %ecx
-        lea v, %edi
-        movl $256, (%edi, %ecx, 4)
-        
-        jmp exit_op
+
 
 main_GET:
     push %ecx
@@ -353,7 +371,6 @@ main_DELETE:
         equal_DELETE_main: 
             inc %ecx
             jmp afisare_DELETE
-        
 
 et_exit:
     mov $1, %eax
