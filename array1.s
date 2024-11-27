@@ -295,7 +295,6 @@ DEFRAGMENTATION:
 
         ret
 
-
 .global main
 
 main:
@@ -412,7 +411,6 @@ main_ADD:
         equal_ADD_main: 
             inc %ecx
             jmp afisare_ADD
-
 
 main_GET:
     push %ecx
