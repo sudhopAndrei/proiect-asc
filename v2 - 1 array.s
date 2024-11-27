@@ -2,13 +2,15 @@
     O: .space 4
     N: .space 4
     op: .space 4
-    v: .space 1024
+    v: .space 65536
     i: .space 4
     j: .space 4
     p: .space 4
     u: .space 4
     descriptor: .space 4
     dimensiune: .space 4
+    index0: .space 4
+    cnt0: .space 4
     formatScanf: .asciz "%ld"
     formatPrintf: .asciz "%ld: (%ld, %ld)\n"
     formatPrintf_GET: .asciz "(%ld, %ld)\n"
@@ -51,6 +53,9 @@ ADD:
         cmp $256, %ebx
         je ADD_256
         
+        cmp $0, %ebx
+        je ADD_0
+
         inc %edx
         jmp for_ADD
 
@@ -76,8 +81,44 @@ ADD:
                 lea v, %edi
                 movl $256, (%edi, %ecx, 4)
             
-                jmp exit_ADD    
-        
+                jmp exit_ADD   
+
+        ADD_0:
+            movl %edx, index0
+            movl $0, cnt0
+            counter_0:
+                mov (%edi, %edx, 4), %ebx
+
+                cmp $0, %ebx
+                jne continue_ADD_0
+
+                incl cnt0
+                inc %edx
+                jmp counter_0
+            
+            continue_ADD_0:
+                cmp cnt0, %eax
+                ja skip_space
+                
+                xor %ecx, %ecx
+                movl index0, %edx
+                lea v, %edi
+                
+                for_0:
+                    cmp %eax, %ecx
+                    je exit_ADD
+
+                    movl descriptor, %ebx
+                    mov %ebx, (%edi, %edx, 4)
+
+                    inc %ecx
+                    inc %edx
+                    jmp for_0 
+
+            skip_space:
+                movl index0, %edx
+                addl cnt0, %edx
+                jmp for_ADD     
 
     exit_ADD:
         
