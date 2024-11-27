@@ -11,6 +11,7 @@
     dimensiune: .space 4
     index0: .space 4
     cnt0: .space 4
+    index_DEFRAG: .space 4
     formatScanf: .asciz "%ld"
     formatPrintf: .asciz "%ld: (%ld, %ld)\n"
     formatPrintf_GET: .asciz "(%ld, %ld)\n"
@@ -247,6 +248,54 @@ DELETE:
 
         ret
     
+DEFRAGMENTATION:
+    push %ebx
+    push %edi
+    push %ebp
+    mov %esp, %ebp
+
+    lea v, %edi
+    xor %ecx, %ecx
+    movl $0, index_DEFRAG
+
+    for_DEFRAG:
+        movl %ecx, index_DEFRAG
+        cmp i, %ecx
+        je exit_DEFRAG
+        
+        mov (%edi, %ecx, 4), %eax
+        cmp $0, %eax
+        jne continue_DEFRAG
+
+        for_move:
+            mov (%edi, %ecx, 4), %eax
+            cmp $256, %eax
+            je end_loop_DEFRAG
+
+            mov 4(%edi, %ecx, 4), %eax
+            mov %eax, (%edi, %ecx, 4)
+
+            inc %ecx
+
+            jmp for_move
+
+        continue_DEFRAG:
+            inc %ecx
+            jmp for_DEFRAG
+
+        end_loop_DEFRAG:
+            decl i
+            movl index_DEFRAG, %ecx
+            jmp for_DEFRAG
+
+    exit_DEFRAG:
+        pop %ebp
+        pop %edi
+        pop %ebx
+
+        ret
+
+
 .global main
 
 main:
@@ -282,8 +331,8 @@ main:
         cmp $3, %eax
         je main_DELETE
 
-        #cmp $4, %eax
-        #je main_DEFRAGMENTATION
+        cmp $4, %eax
+        je main_DEFRAGMENTATION
         
         push %ecx
         push $formatPrintf_EROARE
@@ -428,6 +477,55 @@ main_DELETE:
         equal_DELETE_main: 
             inc %ecx
             jmp afisare_DELETE
+
+main_DEFRAGMENTATION:
+    push %eax
+    push %ecx
+    push %edx
+    call DEFRAGMENTATION
+    pop %edx
+    pop %ecx
+    pop %eax
+    
+    xor %ecx, %ecx
+    lea v, %edi
+    movl $0, p
+
+    afisare_DEFRAG:
+        cmp i, %ecx
+        je exit_op
+
+        mov (%edi, %ecx, 4), %eax
+        mov 4(%edi, %ecx, 4), %ebx
+        
+        cmp %eax, %ebx
+        je equal_DEFRAG_main
+        
+        movl %ecx, u
+        movl p, %eax
+        mov (%edi, %ecx, 4), %ebx
+
+        push %ecx
+        push u
+        push %eax
+        push %ebx
+        push $formatPrintf
+        call printf
+        add $16, %esp
+        pop %ecx
+    
+        push %ecx
+        pushl $0
+        call fflush
+        add $4, %esp
+        pop %ecx
+
+        movl %ecx, p
+        incl p
+        
+        equal_DEFRAG_main:
+            inc %ecx
+            jmp afisare_DEFRAG
 
 et_exit:
     mov $1, %eax
