@@ -2,7 +2,7 @@
     O: .space 4
     N: .space 4
     op: .space 4
-    v: .space 65536
+    v: .space 8000
     i: .space 4
     j: .space 4
     p: .space 4
@@ -88,7 +88,10 @@ ADD:
             movl $0, cnt0
             counter_0:
                 mov (%edi, %edx, 4), %ebx
-
+                                
+                cmp $256, %ebx
+                je move_last
+                
                 cmp $0, %ebx
                 jne continue_ADD_0
 
@@ -114,6 +117,17 @@ ADD:
                     inc %ecx
                     inc %edx
                     jmp for_0 
+                
+            move_last:
+                movl index0, %edx
+                movl $256, (%edi, %edx, 4)
+
+                movl i, %ecx
+                sub cnt0, %ecx
+                movl %ecx, i
+                incl i
+
+                jmp for_ADD
 
             skip_space:
                 movl index0, %edx
@@ -371,7 +385,9 @@ main_DELETE:
     pop %eax
     pop %ecx
     
+    lea v, %edi
     xor %ecx, %ecx
+    movl $0, p
     
     afisare_DELETE:
         cmp i, %ecx
