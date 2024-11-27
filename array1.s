@@ -2,7 +2,7 @@
     O: .space 4
     N: .space 4
     op: .space 4
-    v: .space 8000
+    v: .space 4096
     i: .space 4
     j: .space 4
     p: .space 4
