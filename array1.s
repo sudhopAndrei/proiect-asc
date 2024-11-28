@@ -52,12 +52,12 @@ ADD:
 
     for_ADD:
         xor %ebx, %ebx
-        mov (%edi, %edx, 1), %ebx
+        mov (%edi, %edx, 1), %bl
         
         cmp limit, %edx
         je ADD_256
         
-        cmp $0, %ebx
+        cmp $0, %bl
         je ADD_0
 
         inc %edx
@@ -72,8 +72,8 @@ ADD:
                 je continue_for_256
         
                 lea v, %edi
-                mov descriptor, %ebx
-                mov %ebx, (%edi, %ecx, 1)
+                mov descriptor, %bl
+                mov %bl, (%edi, %ecx, 1)
 
                 inc %ecx
                 jmp for_256
@@ -89,9 +89,9 @@ ADD:
             movl %edx, index0
             movl $0, cnt0
             counter_0:
-                mov (%edi, %edx, 1), %ebx
+                mov (%edi, %edx, 1), %bl
                                 
-                cmp limit, %ebx
+                cmp limit, %edx
                 je move_last
                 
                 cmp $0, %ebx
@@ -113,8 +113,8 @@ ADD:
                     cmp %eax, %ecx
                     je exit_ADD
 
-                    mov descriptor, %ebx
-                    mov %ebx, (%edi, %edx, 1)
+                    mov descriptor, %bl
+                    mov %bl, (%edi, %edx, 1)
 
                     inc %ecx
                     inc %edx
@@ -160,17 +160,17 @@ GET:
     xor %ecx, %ecx
     xor %eax, %eax
     lea v, %edi
-    mov (%edi, %ecx, 1), %eax
+    mov (%edi, %ecx, 1), %al
 
     for_GET:
-        cmp descriptor, %eax
+        cmp descriptor, %al
         je continue_GET
         
         cmp limit, %ecx
         je afisare_NULL
 
         inc %ecx
-        mov (%edi, %ecx, 1), %eax
+        mov (%edi, %ecx, 1), %al
 
         jmp for_GET
     
@@ -178,8 +178,8 @@ GET:
         movl %ecx, p
     
     afisare_GET:
-        mov (%edi, %ecx, 1), %eax
-        mov 1(%edi, %ecx, 1), %ebx
+        mov (%edi, %ecx, 1), %al
+        mov 1(%edi, %ecx, 1), %bl
 
         cmp %eax, %ebx
         je equal_GET  
@@ -232,12 +232,12 @@ DELETE:
 
     for_DELETE:
         xor %eax, %eax
-        mov (%edi, %ecx, 1), %eax
-        cmp descriptor, %eax
+        mov (%edi, %ecx, 1), %al
+        cmp descriptor, %al
         jne not_equal_DELETE
 
         xor %eax, %eax
-        mov %eax, (%edi, %ecx, 1)
+        mov %al, (%edi, %ecx, 1)
 
         not_equal_DELETE:
             cmp limit, %ecx
@@ -269,17 +269,17 @@ DEFRAGMENTATION:
         je exit_DEFRAG
         
         xor %eax, %eax
-        mov (%edi, %ecx, 1), %eax
-        cmp $0, %eax
+        mov (%edi, %ecx, 1), %al
+        cmp $0, %al
         jne continue_DEFRAG
 
         for_move:
-            mov (%edi, %ecx, 1), %eax
+            mov (%edi, %ecx, 1), %al
             cmp limit, %ecx
             je end_loop_DEFRAG
 
-            mov 1(%edi, %ecx, 1), %eax
-            mov %eax, (%edi, %ecx, 1)
+            mov 1(%edi, %ecx, 1), %al
+            mov %al, (%edi, %ecx, 1)
 
             inc %ecx
 
@@ -383,8 +383,8 @@ main_ADD:
         
         xor %eax, %eax
         xor %ebx, %ebx
-        mov (%edi, %ecx, 1), %eax
-        mov 1(%edi, %ecx, 1), %ebx
+        mov (%edi, %ecx, 1), %al
+        mov 1(%edi, %ecx, 1), %bl
 
         cmp %eax, %ebx
         je equal_ADD_main
@@ -394,7 +394,7 @@ main_ADD:
         
         movl %ecx, u
         movl p, %eax
-        mov (%edi, %ecx, 1), %ebx
+        mov (%edi, %ecx, 1), %bl
 
         push %ecx
         push u
@@ -444,8 +444,8 @@ main_DELETE:
         
         xor %eax, %eax
         xor %ebx, %ebx
-        mov (%edi, %ecx, 1), %eax
-        mov 1(%edi, %ecx, 1), %ebx
+        mov (%edi, %ecx, 1), %al
+        mov 1(%edi, %ecx, 1), %bl
 
         cmp %eax, %ebx
         je equal_DELETE_main
@@ -455,7 +455,7 @@ main_DELETE:
         
         movl %ecx, u
         movl p, %eax
-        mov (%edi, %ecx, 1), %ebx
+        mov (%edi, %ecx, 1), %bl
 
         push %ecx
         push u
@@ -493,15 +493,15 @@ main_DEFRAGMENTATION:
 
         xor %eax, %eax
         xor %ebx, %ebx
-        mov (%edi, %ecx, 1), %eax
-        mov 1(%edi, %ecx, 1), %ebx
+        mov (%edi, %ecx, 1), %al
+        mov 1(%edi, %ecx, 1), %bl
         
         cmp %eax, %ebx
         je equal_DEFRAG_main
         
         movl %ecx, u
         movl p, %eax
-        mov (%edi, %ecx, 1), %ebx
+        mov (%edi, %ecx, 1), %bl
 
         push %ecx
         push u
