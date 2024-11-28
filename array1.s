@@ -2,13 +2,14 @@
     O: .space 4
     N: .space 4
     op: .space 4
-    v: .space 4096
+    v: .space 1024
     i: .space 4
     j: .space 4
     p: .space 4
     u: .space 4
-    descriptor: .space 4
+    descriptor: .space 1
     dimensiune: .space 4
+    limit: .space 4
     index0: .space 4
     cnt0: .space 4
     index_DEFRAG: .space 4
@@ -25,7 +26,7 @@ ADD:
     pushl %ebp
     mov %esp, %ebp
     
-    pushl $descriptor
+    push $descriptor
     push $formatScanf
     call scanf
     add $8,%esp
@@ -37,8 +38,8 @@ ADD:
 
     xor %edx, %edx
     movl dimensiune, %eax
-    movl $8, %ebx
-    divl %ebx 
+    mov $8, %ebx
+    div %ebx 
 
     cmp $0, %edx
     je not_inc
@@ -50,8 +51,10 @@ ADD:
         lea v, %edi
 
     for_ADD:
-        mov (%edi, %edx, 4), %ebx
-        cmp $256, %ebx
+        xor %ebx, %ebx
+        mov (%edi, %edx, 1), %ebx
+        
+        cmp limit, %edx
         je ADD_256
         
         cmp $0, %ebx
@@ -69,18 +72,16 @@ ADD:
                 je continue_for_256
         
                 lea v, %edi
-                movl descriptor, %ebx
-                movl %ebx, (%edi, %ecx, 4)
+                mov descriptor, %ebx
+                mov %ebx, (%edi, %ecx, 1)
 
                 inc %ecx
                 jmp for_256
            
             continue_for_256:
                 movl %ecx, i
-
-                inc %ecx
-                lea v, %edi
-                movl $256, (%edi, %ecx, 4)
+                
+                movl %ecx, limit
             
                 jmp exit_ADD   
 
@@ -88,9 +89,9 @@ ADD:
             movl %edx, index0
             movl $0, cnt0
             counter_0:
-                mov (%edi, %edx, 4), %ebx
+                mov (%edi, %edx, 1), %ebx
                                 
-                cmp $256, %ebx
+                cmp limit, %ebx
                 je move_last
                 
                 cmp $0, %ebx
@@ -112,8 +113,8 @@ ADD:
                     cmp %eax, %ecx
                     je exit_ADD
 
-                    movl descriptor, %ebx
-                    mov %ebx, (%edi, %edx, 4)
+                    mov descriptor, %ebx
+                    mov %ebx, (%edi, %edx, 1)
 
                     inc %ecx
                     inc %edx
@@ -121,12 +122,14 @@ ADD:
                 
             move_last:
                 movl index0, %edx
-                movl $256, (%edi, %edx, 4)
 
                 movl i, %ecx
                 sub cnt0, %ecx
                 movl %ecx, i
                 incl i
+
+                movl %ecx, limit
+                addl $2, limit
 
                 jmp for_ADD
 
@@ -155,18 +158,19 @@ GET:
     add $8, %esp
 
     xor %ecx, %ecx
+    xor %eax, %eax
     lea v, %edi
-    mov (%edi, %ecx, 4), %eax
+    mov (%edi, %ecx, 1), %eax
 
     for_GET:
         cmp descriptor, %eax
         je continue_GET
         
-        cmp $256, %eax
+        cmp limit, %ecx
         je afisare_NULL
 
         inc %ecx
-        mov (%edi, %ecx, 4), %eax
+        mov (%edi, %ecx, 1), %eax
 
         jmp for_GET
     
@@ -174,8 +178,8 @@ GET:
         movl %ecx, p
     
     afisare_GET:
-        mov (%edi, %ecx, 4), %eax
-        mov 4(%edi, %ecx, 4), %ebx
+        mov (%edi, %ecx, 1), %eax
+        mov 1(%edi, %ecx, 1), %ebx
 
         cmp %eax, %ebx
         je equal_GET  
@@ -227,15 +231,16 @@ DELETE:
     xor %ecx, %ecx
 
     for_DELETE:
-        mov (%edi, %ecx, 4), %eax
+        xor %eax, %eax
+        mov (%edi, %ecx, 1), %eax
         cmp descriptor, %eax
         jne not_equal_DELETE
 
         xor %eax, %eax
-        mov %eax, (%edi, %ecx, 4)
+        mov %eax, (%edi, %ecx, 1)
 
         not_equal_DELETE:
-            cmp $256, %eax
+            cmp limit, %ecx
             je exit_DELETE
             
             inc %ecx
@@ -263,17 +268,18 @@ DEFRAGMENTATION:
         cmp i, %ecx
         je exit_DEFRAG
         
-        mov (%edi, %ecx, 4), %eax
+        xor %eax, %eax
+        mov (%edi, %ecx, 1), %eax
         cmp $0, %eax
         jne continue_DEFRAG
 
         for_move:
-            mov (%edi, %ecx, 4), %eax
-            cmp $256, %eax
+            mov (%edi, %ecx, 1), %eax
+            cmp limit, %ecx
             je end_loop_DEFRAG
 
-            mov 4(%edi, %ecx, 4), %eax
-            mov %eax, (%edi, %ecx, 4)
+            mov 1(%edi, %ecx, 1), %eax
+            mov %eax, (%edi, %ecx, 1)
 
             inc %ecx
 
@@ -295,12 +301,11 @@ DEFRAGMENTATION:
 
         ret
 
+
 .global main
 
 main:
-    xor %ecx, %ecx
-    lea v, %edi
-    movl $256, (%edi, %ecx, 4)
+    movl $0, limit
 
     pushl $O
     push $formatScanf
@@ -376,8 +381,10 @@ main_ADD:
         cmp i, %ecx
         je exit_op
         
-        mov (%edi, %ecx, 4), %eax
-        mov 4(%edi, %ecx, 4), %ebx
+        xor %eax, %eax
+        xor %ebx, %ebx
+        mov (%edi, %ecx, 1), %eax
+        mov 1(%edi, %ecx, 1), %ebx
 
         cmp %eax, %ebx
         je equal_ADD_main
@@ -387,7 +394,7 @@ main_ADD:
         
         movl %ecx, u
         movl p, %eax
-        mov (%edi, %ecx, 4), %ebx
+        mov (%edi, %ecx, 1), %ebx
 
         push %ecx
         push u
@@ -398,12 +405,6 @@ main_ADD:
         add $16, %esp
         pop %ecx
     
-        push %ecx
-        pushl $0
-        call fflush
-        add $4, %esp
-        pop %ecx
-        
         zero_ADD: 
             movl %ecx, p
             incl p
@@ -411,6 +412,7 @@ main_ADD:
         equal_ADD_main: 
             inc %ecx
             jmp afisare_ADD
+
 
 main_GET:
     push %ecx
@@ -440,8 +442,10 @@ main_DELETE:
         cmp i, %ecx
         je exit_op
         
-        mov (%edi, %ecx, 4), %eax
-        mov 4(%edi, %ecx, 4), %ebx
+        xor %eax, %eax
+        xor %ebx, %ebx
+        mov (%edi, %ecx, 1), %eax
+        mov 1(%edi, %ecx, 1), %ebx
 
         cmp %eax, %ebx
         je equal_DELETE_main
@@ -451,7 +455,7 @@ main_DELETE:
         
         movl %ecx, u
         movl p, %eax
-        mov (%edi, %ecx, 4), %ebx
+        mov (%edi, %ecx, 1), %ebx
 
         push %ecx
         push u
@@ -462,12 +466,6 @@ main_DELETE:
         add $16, %esp
         pop %ecx
     
-        push %ecx
-        pushl $0
-        call fflush
-        add $4, %esp
-        pop %ecx
-        
         zero_DELETE: 
             movl %ecx, p
             incl p
@@ -493,15 +491,17 @@ main_DEFRAGMENTATION:
         cmp i, %ecx
         je exit_op
 
-        mov (%edi, %ecx, 4), %eax
-        mov 4(%edi, %ecx, 4), %ebx
+        xor %eax, %eax
+        xor %ebx, %ebx
+        mov (%edi, %ecx, 1), %eax
+        mov 1(%edi, %ecx, 1), %ebx
         
         cmp %eax, %ebx
         je equal_DEFRAG_main
         
         movl %ecx, u
         movl p, %eax
-        mov (%edi, %ecx, 4), %ebx
+        mov (%edi, %ecx, 1), %ebx
 
         push %ecx
         push u
@@ -510,12 +510,6 @@ main_DEFRAGMENTATION:
         push $formatPrintf
         call printf
         add $16, %esp
-        pop %ecx
-    
-        push %ecx
-        pushl $0
-        call fflush
-        add $4, %esp
         pop %ecx
 
         movl %ecx, p
