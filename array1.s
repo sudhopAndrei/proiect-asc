@@ -9,7 +9,6 @@
     u: .space 4
     descriptor: .space 1
     dimensiune: .space 4
-    limit: .space 4
     index0: .space 4
     cnt0: .space 4
     index_DEFRAG: .space 4
@@ -54,34 +53,32 @@ ADD:
         xor %ebx, %ebx
         mov (%edi, %edx, 1), %bl
         
-        cmp limit, %edx
-        je ADD_256
+        cmp i, %edx
+        je ADD_limit
         
-        cmp $0, %bl
+        cmp $0, %ebx
         je ADD_0
 
         inc %edx
         jmp for_ADD
 
-        ADD_256:
+        ADD_limit:
             movl i, %ecx
             addl %ecx, %eax
 
-            for_256:
+            for_limit:
                 cmp %eax, %ecx
-                je continue_for_256
+                je continue_for_limit
         
                 lea v, %edi
                 mov descriptor, %bl
                 mov %bl, (%edi, %ecx, 1)
 
                 inc %ecx
-                jmp for_256
+                jmp for_limit
            
-            continue_for_256:
+            continue_for_limit:
                 movl %ecx, i
-                
-                movl %ecx, limit
             
                 jmp exit_ADD   
 
@@ -91,7 +88,7 @@ ADD:
             counter_0:
                 mov (%edi, %edx, 1), %bl
                                 
-                cmp limit, %edx
+                cmp i, %edx
                 je move_last
                 
                 cmp $0, %ebx
@@ -126,10 +123,6 @@ ADD:
                 movl i, %ecx
                 sub cnt0, %ecx
                 movl %ecx, i
-                incl i
-
-                movl %ecx, limit
-                addl $2, limit
 
                 jmp for_ADD
 
@@ -163,10 +156,10 @@ GET:
     mov (%edi, %ecx, 1), %al
 
     for_GET:
-        cmp descriptor, %al
+        cmp descriptor, %eax
         je continue_GET
         
-        cmp limit, %ecx
+        cmp i, %ecx
         je afisare_NULL
 
         inc %ecx
@@ -233,14 +226,14 @@ DELETE:
     for_DELETE:
         xor %eax, %eax
         mov (%edi, %ecx, 1), %al
-        cmp descriptor, %al
+        cmp descriptor, %eax
         jne not_equal_DELETE
 
         xor %eax, %eax
         mov %al, (%edi, %ecx, 1)
 
         not_equal_DELETE:
-            cmp limit, %ecx
+            cmp i, %ecx
             je exit_DELETE
             
             inc %ecx
@@ -270,12 +263,12 @@ DEFRAGMENTATION:
         
         xor %eax, %eax
         mov (%edi, %ecx, 1), %al
-        cmp $0, %al
+        cmp $0, %eax
         jne continue_DEFRAG
 
         for_move:
             mov (%edi, %ecx, 1), %al
-            cmp limit, %ecx
+            cmp i, %ecx
             je end_loop_DEFRAG
 
             mov 1(%edi, %ecx, 1), %al
@@ -305,8 +298,6 @@ DEFRAGMENTATION:
 .global main
 
 main:
-    movl $0, limit
-
     pushl $O
     push $formatScanf
     call scanf
