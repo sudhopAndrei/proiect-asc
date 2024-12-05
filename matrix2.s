@@ -15,8 +15,8 @@
     copie_dim: .space 4
     row: .space 4
     formatScanf: .asciz "%d"
-    formatPrintf: .asciz "%d: (%d, %d), (%d, %d)\n"
-    formatPrintf_GET: .asciz "(%d, %d), (%d, %d)\n"
+    formatPrintf: .asciz "%d: ((%d, %d), (%d, %d))\n"
+    formatPrintf_GET: .asciz "((%d, %d), (%d, %d))\n"
     formatPrintf_EROARE: .asciz "Operatie invalida!\n"
 
 .text
@@ -125,11 +125,17 @@ ADD:
                 cmp $0, %ebx
                 jne continue_ADD_0
 
+                cmp k, %edx
+                je update_k
+
                 incl cnt0
                 inc %edx
                 jmp counter_0
             
             continue_ADD_0:
+                cmp %eax, cnt0
+                jb skip_space
+
                 xor %ecx, %ecx
                 movl index, %edx
                 lea v, %edi
@@ -147,9 +153,19 @@ ADD:
                 
             move_last:
                 cmp cnt0, %eax
-                jb continue_ADD_0
+                jbe continue_ADD_0
 
                 jmp for_ADD    
+
+            skip_space:
+                movl index, %edx
+                addl cnt0, %edx
+                jmp for_ADD    
+
+            update_k:
+                movl cnt0, %ecx
+                subl %ecx, k
+                mov index, %edx
     
     next_line:
         movl %edx, %ecx
@@ -266,6 +282,42 @@ GET:
 
         ret
 
+DELETE:
+    push %ebx
+    push %edi
+    push %ebp
+    mov %esp, %ebp
+
+    push $descriptor
+    push $formatScanf
+    call scanf
+    add $8, %esp
+
+    lea v, %edi
+    xor %ecx, %ecx
+
+    for_DELETE:
+        xor %eax, %eax
+        mov (%edi, %ecx, 1), %al
+        cmp descriptor, %eax
+        jne not_equal_DELETE
+
+        xor %eax, %eax
+        mov %al, (%edi, %ecx, 1)
+
+        not_equal_DELETE:
+            cmp k, %ecx
+            je exit_DELETE
+            
+            inc %ecx
+            jmp for_DELETE
+
+    exit_DELETE:
+        pop %ebp
+        pop %edi
+        pop %ebx
+
+        ret
 
 .global main
 
@@ -296,8 +348,8 @@ main:
         cmp $2, %eax
         je main_GET
 
-        #cmp $3, %eax
-        #je main_DELETE
+        cmp $3, %eax
+        je main_DELETE
 
         #cmp $4, %eax
         #je main_DEFRAGMENTATION
@@ -415,6 +467,80 @@ main_GET:
     pop %ecx
 
     jmp exit_op
+
+main_DELETE:
+    push %ecx
+    push %eax
+    push %edx
+    call DELETE
+    pop %edx
+    pop %eax
+    pop %ecx
+
+    xor %ecx, %ecx
+    lea v, %edi
+    movl $0, p
+
+    afisare_DELETE:
+        cmp k, %ecx
+        je exit_op
+
+        xor %eax, %eax
+        xor %ebx, %ebx
+        mov (%edi, %ecx, 1), %al
+        mov 1(%edi, %ecx, 1), %bl
+
+        cmp %eax, %ebx
+        je equal_DELETE_main
+        
+        cmp $0, %eax
+        je zero_DELETE
+
+        movl %ecx, index
+        movl p, %eax
+        xor %edx, %edx
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, p
+        movl index, %ecx
+
+        movl %ecx, index
+        mov %ecx, %eax
+        xor %edx, %edx
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, u
+        movl %eax, row
+        movl index, %ecx
+
+        mov (%edi, %ecx, 1), %bl
+
+        push %ecx
+        push u
+        push row
+        push p
+        push row
+        push %ebx
+        push $formatPrintf
+        call printf
+        add $24, %esp
+        pop %ecx
+    
+        movl %ecx, index
+        movl $1024, %ecx
+        xor %edx, %edx
+        movl index, %eax
+        div %ecx
+        
+        movl index, %ecx
+
+        zero_DELETE: 
+            movl %ecx, p
+            incl p
+
+        equal_DELETE_main: 
+            inc %ecx
+            jmp afisare_ADD
 
 et_exit:
     mov $1, %eax
