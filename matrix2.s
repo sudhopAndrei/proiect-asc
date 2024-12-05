@@ -17,7 +17,7 @@
     rowend: .space 4
     total: .space 4
     formatScanf: .asciz "%d"
-    formatPrintf: .asciz "%d:(%d, %d), (%d, %d)\n"
+    formatPrintf: .asciz "%d: (%d, %d), (%d, %d)\n"
     formatPrintf_EROARE: .asciz "Operatie invalida!\n"
 
 .text
@@ -239,7 +239,7 @@ main_ADD:
     
     for_ADD_main: 
         cmp N, %ecx
-        je bridge_ADD
+        je continue_ADD_main
     
         push %ecx
         push %eax
@@ -251,20 +251,20 @@ main_ADD:
 
         inc %ecx
         jmp for_ADD_main
-    
-    bridge_ADD:
-        movl k, %edx
-        movl %edx, total
 
     continue_ADD_main:
-        movl $0, rowend
         xor %ecx, %ecx     
         lea v, %edi
         movl $0, p
+        movl $0, rowend
 
     afisare_ADD:
+        cmpl $0, %ecx
+        ja verificare
+
+    continue_afisare_ADD:
         cmp k, %ecx
-        je restore_ADD
+        je exit_op
 
         xor %eax, %eax
         xor %ebx, %ebx
@@ -276,20 +276,27 @@ main_ADD:
         
         cmp $0, %eax
         je zero_ADD
-        
-        movl %ecx, u
+
         movl p, %eax
+        xor %edx, %edx
+        movl %ecx, index
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, p
+        movl index, %ecx
+
+        movl %ecx, u
         mov (%edi, %ecx, 1), %bl
 
         push %ecx
         push u
         push rowend
-        push %eax
+        push p
         push rowend
         push %ebx
         push $formatPrintf
         call printf
-        add $16, %esp
+        add $20, %esp
         pop %ecx
     
         movl %ecx, index
@@ -313,13 +320,22 @@ main_ADD:
 
         newrow:
             incl rowend
-            subl $1024, k
 
-            jmp continue_ADD_main
+            jmp continue_afisare_ADD
+
+        verificare:
+            movl %ecx, index
+            movl $1024, %ecx
+            xor %edx, %edx
+            movl index, %eax
+            div %ecx
         
-        restore_ADD:
-            movl total, %edx
-            movl %edx, k
+            movl index, %ecx
+
+            cmp $0, %edx
+            je newrow
+
+            jmp continue_afisare_ADD
 
 et_exit:
     mov $1, %eax
