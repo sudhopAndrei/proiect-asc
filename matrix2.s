@@ -10,14 +10,13 @@
     descriptor: .space 1
     dimensiune: .space 4
     index: .space 4
-    index0: .space 4
     cnt0: .space 4
     index_DEFRAG: .space 4
     copie_dim: .space 4
-    rowend: .space 4
-    total: .space 4
+    row: .space 4
     formatScanf: .asciz "%d"
     formatPrintf: .asciz "%d: (%d, %d), (%d, %d)\n"
+    formatPrintf_GET: .asciz "(%d, %d), (%d, %d)\n"
     formatPrintf_EROARE: .asciz "Operatie invalida!\n"
 
 .text
@@ -100,7 +99,6 @@ ADD:
                 jmp exit_ADD   
 
         ADD_0:
-            movl %edx, index0
             movl $0, cnt0
 
             movl $1024, %ecx
@@ -113,12 +111,12 @@ ADD:
             inc %eax
             mul %ecx
                 
-            movl %eax, rowend
+            movl %eax, row
             mov copie_dim, %eax
             mov index, %edx
 
             counter_0:
-                cmp rowend, %edx
+                cmp row, %edx
                 je move_last
       
                 xor %ebx, %ebx
@@ -133,7 +131,7 @@ ADD:
             
             continue_ADD_0:
                 xor %ecx, %ecx
-                movl index0, %edx
+                movl index, %edx
                 lea v, %edi
                 
                 for_0:
@@ -182,6 +180,92 @@ ADD:
         
         ret
 
+GET:
+    push %ebx
+    push %edi
+    push %ebp
+    mov %esp, %ebp
+
+    push $descriptor
+    push $formatScanf
+    call scanf
+    add $8, %esp
+
+    xor %ecx, %ecx
+    xor %eax, %eax
+    lea v, %edi
+    mov (%edi, %ecx, 1), %al
+
+    for_GET:
+        cmp descriptor, %eax
+        je continue_GET
+        
+        cmp k, %ecx
+        je afisare_NULL
+
+        inc %ecx
+        mov (%edi, %ecx, 1), %al
+
+        jmp for_GET
+    
+    continue_GET:
+        movl %ecx, index
+        movl %ecx, %eax
+        xor %edx, %edx
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, p
+        movl %eax, row
+        movl index, %ecx
+    
+    afisare_GET:
+        mov (%edi, %ecx, 1), %al
+        mov 1(%edi, %ecx, 1), %bl
+
+        cmp %eax, %ebx
+        je equal_GET  
+
+        movl %ecx, index
+        mov %ecx, %eax
+        xor %edx, %edx
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, u
+        movl index, %ecx
+
+        push %ecx
+        pushl u
+        pushl row
+        pushl p
+        pushl row
+        push $formatPrintf_GET
+        call printf
+        add $20, %esp
+        pop %ecx
+
+        jmp exit_GET
+
+        equal_GET:
+            inc %ecx
+            jmp afisare_GET
+    
+    afisare_NULL:
+
+        pushl $0
+        pushl $0
+        pushl $0
+        pushl $0 
+        push $formatPrintf_GET
+        call printf
+        add $20, %esp
+
+    exit_GET:
+        pop %ebp
+        pop %edi
+        pop %ebx
+
+        ret
+
 
 .global main
 
@@ -209,14 +293,17 @@ main:
         cmp $1, %eax
         je main_ADD
 
-        #cmp $2, %eax
-        #je main_GET
+        cmp $2, %eax
+        je main_GET
 
         #cmp $3, %eax
         #je main_DELETE
 
         #cmp $4, %eax
         #je main_DEFRAGMENTATION
+
+        #cmp $5, %eax
+        #je main_CONCRETE
         
         push %ecx
         push $formatPrintf_EROARE
@@ -256,13 +343,8 @@ main_ADD:
         xor %ecx, %ecx     
         lea v, %edi
         movl $0, p
-        movl $0, rowend
 
     afisare_ADD:
-        cmpl $0, %ecx
-        ja verificare
-
-    continue_afisare_ADD:
         cmp k, %ecx
         je exit_op
 
@@ -277,26 +359,34 @@ main_ADD:
         cmp $0, %eax
         je zero_ADD
 
+        movl %ecx, index
         movl p, %eax
         xor %edx, %edx
-        movl %ecx, index
         movl $1024, %ecx
         div %ecx
         movl %edx, p
         movl index, %ecx
 
-        movl %ecx, u
+        movl %ecx, index
+        mov %ecx, %eax
+        xor %edx, %edx
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, u
+        movl %eax, row
+        movl index, %ecx
+
         mov (%edi, %ecx, 1), %bl
 
         push %ecx
         push u
-        push rowend
+        push row
         push p
-        push rowend
+        push row
         push %ebx
         push $formatPrintf
         call printf
-        add $20, %esp
+        add $24, %esp
         pop %ecx
     
         movl %ecx, index
@@ -307,9 +397,6 @@ main_ADD:
         
         movl index, %ecx
 
-        cmp $0, %edx
-        je newrow
-
         zero_ADD: 
             movl %ecx, p
             incl p
@@ -318,24 +405,16 @@ main_ADD:
             inc %ecx
             jmp afisare_ADD
 
-        newrow:
-            incl rowend
+main_GET:
+    push %ecx
+    push %eax
+    push %edx
+    call GET
+    pop %edx
+    pop %eax
+    pop %ecx
 
-            jmp continue_afisare_ADD
-
-        verificare:
-            movl %ecx, index
-            movl $1024, %ecx
-            xor %edx, %edx
-            movl index, %eax
-            div %ecx
-        
-            movl index, %ecx
-
-            cmp $0, %edx
-            je newrow
-
-            jmp continue_afisare_ADD
+    jmp exit_op
 
 et_exit:
     mov $1, %eax
