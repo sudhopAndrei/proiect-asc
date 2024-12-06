@@ -12,9 +12,9 @@
     index0: .space 4
     cnt0: .space 4
     index_DEFRAG: .space 4
-    formatScanf: .asciz "%ld"
-    formatPrintf: .asciz "%ld: (%ld, %ld)\n"
-    formatPrintf_GET: .asciz "(%ld, %ld)\n"
+    formatScanf: .asciz "%d"
+    formatPrintf: .asciz "%d: (%d, %d)\n"
+    formatPrintf_GET: .asciz "(%d, %d)\n"
     formatPrintf_EROARE: .asciz "Operatie invalida!\n"
 
 .text
