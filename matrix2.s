@@ -14,6 +14,7 @@
     index_DEFRAG: .space 4
     copie_dim: .space 4
     row: .space 4
+    gate: .space 4
     formatScanf: .asciz "%d"
     formatPrintf: .asciz "%d: ((%d, %d), (%d, %d))\n"
     formatPrintf_GET: .asciz "((%d, %d), (%d, %d))\n"
@@ -319,6 +320,86 @@ DELETE:
 
         ret
 
+DEFRAGMENTATION:
+    push %ebx
+    push %edi
+    push %ebp
+    mov %esp, %ebp
+
+    lea v, %edi
+    xor %ecx, %ecx
+    movl $0, index_DEFRAG
+
+    for_DEFRAG:
+        movl $0, gate
+        movl %ecx, index_DEFRAG
+        cmp k, %ecx
+        je exit_DEFRAG
+
+        xor %eax, %eax
+        mov (%edi, %ecx, 1), %al
+        cmp $0, %eax
+        jne continue_DEFRAG
+          
+        for_move:
+            movl %ecx, index
+            movl $1024, %ecx
+            xor %edx, %edx
+            movl index, %eax
+            div %ecx
+
+            inc %eax
+            mul %ecx
+            dec %eax
+
+            mov %eax, row
+            mov index, %ecx
+
+            cmpl k, %ecx
+            je exit_DEFRAG
+
+            cmp row, %ecx
+            je end_loop_DEFRAG
+
+            xor %eax, %eax
+            mov 1(%edi, %ecx, 1), %al
+            mov %al, (%edi, %ecx, 1)
+
+            cmp $0, %al
+            jne et_gate
+
+            cont_gate:
+                inc %ecx
+
+                jmp for_move
+
+        continue_DEFRAG:
+            inc %ecx
+            jmp for_DEFRAG
+        
+        et_gate:
+            movl $1, gate
+            jmp cont_gate
+            
+        end_loop_DEFRAG:
+            cmpl $0, gate
+            je end_plus
+
+            movl index_DEFRAG, %ecx
+            jmp for_DEFRAG    
+        
+        end_plus:
+            movl index_DEFRAG, %ecx
+            inc %ecx
+            jmp for_DEFRAG  
+
+    exit_DEFRAG:
+        pop %ebp
+        pop %edi
+        pop %ebx
+
+        ret
+
 .global main
 
 main:
@@ -351,8 +432,8 @@ main:
         cmp $3, %eax
         je main_DELETE
 
-        #cmp $4, %eax
-        #je main_DEFRAGMENTATION
+        cmp $4, %eax
+        je main_DEFRAGMENTATION
 
         #cmp $5, %eax
         #je main_CONCRETE
@@ -540,7 +621,81 @@ main_DELETE:
 
         equal_DELETE_main: 
             inc %ecx
-            jmp afisare_ADD
+            jmp afisare_DELETE
+
+main_DEFRAGMENTATION:
+    push %ecx
+    push %eax
+    push %edx
+    call DEFRAGMENTATION
+    pop %edx
+    pop %eax
+    pop %ecx
+
+    xor %ecx, %ecx
+    lea v, %edi
+    movl $0, p
+
+    afisare_DEFRAG:
+        cmp k, %ecx
+        je exit_op
+
+        xor %eax, %eax
+        xor %ebx, %ebx
+        mov (%edi, %ecx, 1), %al
+        mov 1(%edi, %ecx, 1), %bl
+
+        cmp %eax, %ebx
+        je equal_DEFRAG_main
+        
+        cmp $0, %eax
+        je zero_DEFRAG
+
+        movl %ecx, index
+        movl p, %eax
+        xor %edx, %edx
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, p
+        movl index, %ecx
+
+        movl %ecx, index
+        mov %ecx, %eax
+        xor %edx, %edx
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, u
+        movl %eax, row
+        movl index, %ecx
+
+        mov (%edi, %ecx, 1), %bl
+
+        push %ecx
+        push u
+        push row
+        push p
+        push row
+        push %ebx
+        push $formatPrintf
+        call printf
+        add $24, %esp
+        pop %ecx
+    
+        movl %ecx, index
+        movl $1024, %ecx
+        xor %edx, %edx
+        movl index, %eax
+        div %ecx
+        
+        movl index, %ecx
+
+        zero_DEFRAG: 
+            movl %ecx, p
+            incl p
+
+        equal_DEFRAG_main: 
+            inc %ecx
+            jmp afisare_DEFRAG
 
 et_exit:
     mov $1, %eax
