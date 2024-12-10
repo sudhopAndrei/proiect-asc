@@ -15,6 +15,7 @@
     copie_dim: .space 4
     row: .space 4
     gate: .space 4
+    knew: .space 4
     formatScanf: .asciz "%d"
     formatPrintf: .asciz "%d: ((%d, %d), (%d, %d))\n"
     formatPrintf_GET: .asciz "((%d, %d), (%d, %d))\n"
@@ -191,7 +192,6 @@ ADD:
             jmp for_ADD
 
     exit_ADD:
-        
         popl %ebp
         popl %edi
         popl %ebx
@@ -335,7 +335,7 @@ DEFRAGMENTATION:
         movl $0, gate
         movl %ecx, index_DEFRAG
         cmp k, %ecx
-        je exit_DEFRAG
+        je update2_k
 
         xor %eax, %eax
         mov (%edi, %ecx, 1), %al
@@ -382,8 +382,7 @@ DEFRAGMENTATION:
         end_loop_DEFRAG:
             cmpl $0, gate
             je end_plus
-
-            decl k
+            
             movl index_DEFRAG, %ecx
             jmp for_DEFRAG    
         
@@ -392,7 +391,31 @@ DEFRAGMENTATION:
             inc %ecx
             jmp for_DEFRAG  
 
+    update2_k:
+        xor %ecx, %ecx
+        lea v, %edi
+
+        et_k:
+            cmp k, %ecx
+            je exit_DEFRAG
+            
+            xor %eax, %eax
+            mov (%edi, %ecx, 1), %al
+            
+            cmp $0, %al
+            je cont_k
+
+            movl %ecx, knew
+
+            cont_k:
+                inc %ecx
+                jmp et_k
+
     exit_DEFRAG:
+        incl knew
+        movl knew, %eax
+        movl %eax, k
+
         pop %ebp
         pop %edi
         pop %ebx
