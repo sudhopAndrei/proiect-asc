@@ -383,6 +383,7 @@ DEFRAGMENTATION:
             cmpl $0, gate
             je end_plus
 
+            decl k
             movl index_DEFRAG, %ecx
             jmp for_DEFRAG    
         
