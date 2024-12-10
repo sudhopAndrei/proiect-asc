@@ -356,9 +356,6 @@ DEFRAGMENTATION:
             mov %eax, row
             mov index, %ecx
 
-            cmpl k, %ecx
-            je exit_DEFRAG
-
             cmp row, %ecx
             je end_loop_DEFRAG
 
