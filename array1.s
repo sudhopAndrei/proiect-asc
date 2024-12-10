@@ -16,6 +16,7 @@
     formatPrintf: .asciz "%d: (%d, %d)\n"
     formatPrintf_GET: .asciz "(%d, %d)\n"
     formatPrintf_EROARE: .asciz "Operatie invalida!\n"
+    formatPrintf_EROARE2: .asciz "Nu incape!\n"
 
 .text
 
@@ -25,27 +26,34 @@ ADD:
     pushl %ebp
     mov %esp, %ebp
     
-    push $descriptor
-    push $formatScanf
-    call scanf
-    add $8,%esp
+    begin_ADD:
 
-    pushl $dimensiune
-    push $formatScanf
-    call scanf
-    add $8, %esp
+        push $descriptor
+        push $formatScanf
+        call scanf
+        add $8,%esp
 
-    xor %edx, %edx
-    movl dimensiune, %eax
-    mov $8, %ebx
-    div %ebx 
+        pushl $dimensiune
+        push $formatScanf
+        call scanf
+        add $8, %esp
 
-    cmp $0, %edx
-    je not_inc
+        xor %edx, %edx
+        movl dimensiune, %eax
+        mov $8, %ebx
+        div %ebx 
+
+        cmp $0, %edx
+        je not_inc
     
-    inc %eax
+        inc %eax
     
     not_inc:
+        mov $1024, %ecx
+        subl i, %ecx
+        cmp %ecx, %eax
+        ja eroare
+
         mov $0, %edx
         lea v, %edi
 
@@ -129,7 +137,20 @@ ADD:
             skip_space:
                 movl index0, %edx
                 addl cnt0, %edx
-                jmp for_ADD     
+                jmp for_ADD  
+
+    eroare:
+        push %eax
+        push %ecx
+        push %edx
+        push $formatPrintf_EROARE2
+        call printf
+        add $4, %esp
+        pop %edx
+        pop %ecx
+        pop %eax
+        
+        jmp begin_ADD   
 
     exit_ADD:
         
@@ -267,7 +288,6 @@ DEFRAGMENTATION:
         jne continue_DEFRAG
 
         for_move:
-            mov (%edi, %ecx, 1), %al
             cmp i, %ecx
             je end_loop_DEFRAG
 
