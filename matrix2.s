@@ -167,6 +167,7 @@ ADD:
                 movl cnt0, %ecx
                 subl %ecx, k
                 mov index, %edx
+                jmp for_ADD
     
     next_line:
         movl %edx, %ecx
