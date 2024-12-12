@@ -9,13 +9,11 @@
     u: .space 4
     descriptor: .space 1
     dimensiune: .space 4
+    size: .space 4
     index: .space 4
     cnt0: .space 4
-    index_DEFRAG: .space 4
     copie_dim: .space 4
     row: .space 4
-    gate: .space 4
-    knew: .space 4
     formatScanf: .asciz "%d"
     formatPrintf: .asciz "%d: ((%d, %d), (%d, %d))\n"
     formatPrintf_GET: .asciz "((%d, %d), (%d, %d))\n"
@@ -326,103 +324,95 @@ DEFRAGMENTATION:
     push %edi
     push %ebp
     mov %esp, %ebp
-
-    lea v, %edi
+    
+    xor %edx, %edx
     xor %ecx, %ecx
-    movl $0, index_DEFRAG
+    lea v, %edi
+
+    movl $1, size
 
     for_DEFRAG:
-        movl $0, gate
-        movl %ecx, index_DEFRAG
         cmp k, %ecx
-        je update2_k
+        je exit_DEFRAG
 
         xor %eax, %eax
+        xor %ebx, %ebx
         mov (%edi, %ecx, 1), %al
+        mov 1(%edi, %ecx, 1), %bl
+        
         cmp $0, %eax
-        jne continue_DEFRAG
-          
-        for_move:
-            movl %ecx, index
-            movl $1024, %ecx
-            xor %edx, %edx
-            movl index, %eax
-            div %ecx
+        je skip_0
 
-            inc %eax
-            mul %ecx
-            dec %eax
+        cmp %eax, %ebx
+        jne verif
 
-            mov %eax, row
-            mov index, %ecx
-
-            cmp row, %ecx
-            je end_loop_DEFRAG
-
-            xor %eax, %eax
-            mov 1(%edi, %ecx, 1), %al
-            mov %al, (%edi, %ecx, 1)
-
-            cmp $0, %al
-            jne et_gate
-
-            cont_gate:
-                inc %ecx
-
-                jmp for_move
-
-        continue_DEFRAG:
+        incl size
+        mov %al, descriptor
+        
+        skip_0:
             inc %ecx
             jmp for_DEFRAG
-        
-        et_gate:
-            movl $1, gate
-            jmp cont_gate
-            
-        end_loop_DEFRAG:
-            cmpl $0, gate
-            je end_plus
-            
-            movl index_DEFRAG, %ecx
-            jmp for_DEFRAG    
-        
-        end_plus:
-            movl index_DEFRAG, %ecx
-            inc %ecx
-            jmp for_DEFRAG  
 
-    update2_k:
-        xor %ecx, %ecx
+    verif: 
+        cmp $0, %edx
+        je set
+
+        mov %edx, index
+        movl $1024, %ebx
+        xor %edx, %edx
+        mov index, %eax
+        div %ebx
+    
+        cmp size, %edx
+        jb newline
+
+        mov index, %edx
+    
+    set:
+        addl %edx, size
         lea v, %edi
 
-        et_k:
-            cmp k, %ecx
-            je exit_DEFRAG
-            
-            xor %eax, %eax
-            mov (%edi, %ecx, 1), %al
-            
-            cmp $0, %al
-            je cont_k
+    add_DEFRAG:
+        cmpl size, %edx
+        je reset
+        
+        mov descriptor, %al
+        mov %al, (%edi, %edx, 1)
 
-            movl %ecx, knew
+        inc %edx
+        jmp add_DEFRAG
+         
+    newline:
+        inc %eax
+        mul %ebx
+        mov index, %edx
+ 
+        loop_0: 
+            cmp %eax, %edx
+            je set
 
-            cont_k:
-                inc %ecx
-                jmp et_k
+            xor %ebx, %ebx
+            mov %bl, (%edi, %edx, 1)
+
+            inc %edx
+            jmp loop_0
+    
+    reset:
+        movl $1, size
+        inc %ecx
+
+        jmp for_DEFRAG
 
     exit_DEFRAG:
-        incl knew
-        movl knew, %eax
-        movl %eax, k
-
+        mov %edx, k
+        
         pop %ebp
         pop %edi
         pop %ebx
 
-        ret
+    ret
 
-.global main
+.global main 
 
 main:
     movl $0, k
