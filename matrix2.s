@@ -362,12 +362,14 @@ DEFRAGMENTATION:
         xor %edx, %edx
         mov index, %eax
         div %ebx
-    
-        cmp size, %edx
-        jb newline
 
+        sub %edx, %ebx
+
+        cmp size, %ebx
+        jb newline
+        
         mov index, %edx
-    
+
     set:
         addl %edx, size
         lea v, %edi
@@ -384,6 +386,7 @@ DEFRAGMENTATION:
          
     newline:
         inc %eax
+        movl $1024, %ebx
         mul %ebx
         mov index, %edx
  
