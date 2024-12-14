@@ -413,7 +413,7 @@ DEFRAGMENTATION:
         pop %edi
         pop %ebx
 
-    ret
+        ret
 
 .global main 
 
