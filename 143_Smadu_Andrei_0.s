@@ -3,20 +3,18 @@
     N: .space 4
     op: .space 4
     v: .space 1024
-    i: .space 4
+    i: .space 4 #total numere
     j: .space 4
     p: .space 4
     u: .space 4
-    descriptor: .space 1
-    dimensiune: .space 4
-    index0: .space 4
+    filedesc: .space 1
+    size: .space 4
+    index: .space 4
     cnt0: .space 4
-    index_DEFRAG: .space 4
     formatScanf: .asciz "%d"
     formatPrintf: .asciz "%d: (%d, %d)\n"
     formatPrintf_GET: .asciz "(%d, %d)\n"
     formatPrintf_EROARE: .asciz "Operatie invalida!\n"
-    formatPrintf_EROARE2: .asciz "Nu incape!\n"
 
 .text
 
@@ -26,36 +24,31 @@ ADD:
     pushl %ebp
     mov %esp, %ebp
     
-    begin_ADD:
+    push $filedesc
+    push $formatScanf
+    call scanf
+    add $8,%esp
 
-        push $descriptor
-        push $formatScanf
-        call scanf
-        add $8,%esp
+    pushl $size
+    push $formatScanf
+    call scanf
+    add $8, %esp
 
-        pushl $dimensiune
-        push $formatScanf
-        call scanf
-        add $8, %esp
+    xor %edx, %edx
+    movl size, %eax
+    mov $8, %ebx
+    div %ebx 
 
-        xor %edx, %edx
-        movl dimensiune, %eax
-        mov $8, %ebx
-        div %ebx 
-
-        cmp $0, %edx
-        je not_inc
+    cmp $0, %edx
+    je not_inc
     
-        inc %eax
+    inc %eax
     
     not_inc:
-        mov $1024, %ecx
-        subl i, %ecx
-        cmp %ecx, %eax
-        ja eroare
-
         mov $0, %edx
         lea v, %edi
+
+        jmp check
 
     for_ADD:
         xor %ebx, %ebx
@@ -71,27 +64,27 @@ ADD:
         jmp for_ADD
 
         ADD_limit:
-            movl i, %ecx
-            addl %ecx, %eax
+            addl %edx, %eax
+            movl %edx, index
 
             for_limit:
-                cmp %eax, %ecx
+                cmp %eax, %edx
                 je continue_for_limit
         
                 lea v, %edi
-                mov descriptor, %bl
-                mov %bl, (%edi, %ecx, 1)
+                mov filedesc, %bl
+                mov %bl, (%edi, %edx, 1)
 
-                inc %ecx
+                inc %edx
                 jmp for_limit
            
             continue_for_limit:
-                movl %ecx, i
+                movl %edx, i
             
-                jmp exit_ADD   
+                jmp afisare_ADD  
 
         ADD_0:
-            movl %edx, index0
+            movl %edx, index
             movl $0, cnt0
             counter_0:
                 mov (%edi, %edx, 1), %bl
@@ -111,14 +104,14 @@ ADD:
                 ja skip_space
                 
                 xor %ecx, %ecx
-                movl index0, %edx
+                movl index, %edx
                 lea v, %edi
                 
                 for_0:
                     cmp %eax, %ecx
-                    je exit_ADD
+                    je afisare_ADD
 
-                    mov descriptor, %bl
+                    mov filedesc, %bl
                     mov %bl, (%edi, %edx, 1)
 
                     inc %ecx
@@ -126,7 +119,7 @@ ADD:
                     jmp for_0 
                 
             move_last:
-                movl index0, %edx
+                movl index, %edx
 
                 movl i, %ecx
                 sub cnt0, %ecx
@@ -135,22 +128,51 @@ ADD:
                 jmp for_ADD
 
             skip_space:
-                movl index0, %edx
+                movl index, %edx
                 addl cnt0, %edx
                 jmp for_ADD  
 
-    eroare:
-        push %eax
-        push %ecx
-        push %edx
-        push $formatPrintf_EROARE2
+    check:
+        movl $1024, %ecx
+        subl i, %ecx
+
+        cmp %eax, %ecx
+        jb error
+
+        xor %ebx, %ebx
+        xor %ecx, %ecx
+
+        for_check:
+            cmp i, %ecx
+            je for_ADD
+
+            mov (%edi, %ecx, 1), %bl
+            cmp filedesc, %bl
+            je error
+
+            inc %ecx
+            jmp for_check
+
+    error:
+        pushl $0
+        pushl $0
+        push $formatPrintf_GET
         call printf
-        add $4, %esp
-        pop %edx
-        pop %ecx
-        pop %eax
-        
-        jmp begin_ADD   
+        add $12, %esp
+
+        jmp exit_ADD  
+
+    afisare_ADD:
+        xor %ebx, %ebx
+        mov filedesc, %bl
+        dec %edx
+
+        push %edx
+        push index
+        push %ebx
+        push $formatPrintf
+        call printf
+        add $16, %esp
 
     exit_ADD:
         
@@ -166,18 +188,20 @@ GET:
     push %ebp
     mov %esp, %ebp
 
-    push $descriptor
+    push $filedesc
     push $formatScanf
     call scanf
     add $8, %esp
 
     xor %ecx, %ecx
     xor %eax, %eax
+    xor %ebx, %ebx
+    
     lea v, %edi
     mov (%edi, %ecx, 1), %al
 
     for_GET:
-        cmp descriptor, %eax
+        cmp filedesc, %eax
         je continue_GET
         
         cmp i, %ecx
@@ -198,11 +222,10 @@ GET:
         cmp %eax, %ebx
         je equal_GET  
         
-        movl p, %eax
         movl %ecx, u
 
         push u
-        push %eax
+        push p
         push $formatPrintf_GET
         call printf
         add $12, %esp
@@ -214,11 +237,8 @@ GET:
             jmp afisare_GET
     
     afisare_NULL:
-        xor %eax, %eax
-        xor %ebx, %ebx
-        
-        push %eax
-        push %ebx
+        push $0
+        push $0
         push $formatPrintf_GET
         call printf
         add $12, %esp
@@ -236,7 +256,7 @@ DELETE:
     push %ebp
     mov %esp, %ebp
 
-    push $descriptor
+    push $filedesc
     push $formatScanf
     call scanf
     add $8, %esp
@@ -247,7 +267,7 @@ DELETE:
     for_DELETE:
         xor %eax, %eax
         mov (%edi, %ecx, 1), %al
-        cmp descriptor, %eax
+        cmp filedesc, %eax
         jne not_equal_DELETE
 
         xor %eax, %eax
@@ -275,10 +295,10 @@ DEFRAGMENTATION:
 
     lea v, %edi
     xor %ecx, %ecx
-    movl $0, index_DEFRAG
+    movl $0, index
 
     for_DEFRAG:
-        movl %ecx, index_DEFRAG
+        movl %ecx, index
         cmp i, %ecx
         je exit_DEFRAG
         
@@ -304,7 +324,7 @@ DEFRAGMENTATION:
 
         end_loop_DEFRAG:
             decl i
-            movl index_DEFRAG, %ecx
+            movl index, %ecx
             jmp for_DEFRAG
 
     exit_DEFRAG:
@@ -370,7 +390,7 @@ main_ADD:
     
     for_ADD_main: 
         cmp N, %ecx
-        je continue_ADD_main
+        je exit_op
     
         push %ecx
         push %eax
@@ -382,48 +402,6 @@ main_ADD:
 
         inc %ecx
         jmp for_ADD_main
-
-    continue_ADD_main:
-        xor %ecx, %ecx     
-        lea v, %edi
-        movl $0, p
-
-    afisare_ADD:
-        cmp i, %ecx
-        je exit_op
-        
-        xor %eax, %eax
-        xor %ebx, %ebx
-        mov (%edi, %ecx, 1), %al
-        mov 1(%edi, %ecx, 1), %bl
-
-        cmp %eax, %ebx
-        je equal_ADD_main
-        
-        cmp $0, %eax
-        je zero_ADD
-        
-        movl %ecx, u
-        movl p, %eax
-        mov (%edi, %ecx, 1), %bl
-
-        push %ecx
-        push u
-        push %eax
-        push %ebx
-        push $formatPrintf
-        call printf
-        add $16, %esp
-        pop %ecx
-    
-        zero_ADD: 
-            movl %ecx, p
-            incl p
-
-        equal_ADD_main: 
-            inc %ecx
-            jmp afisare_ADD
-
 
 main_GET:
     push %ecx
