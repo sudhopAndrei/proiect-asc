@@ -228,8 +228,8 @@ ADD:
         div %ecx
         movl %eax, row
         movl %edx, p
-
-        dec %ebx
+        
+        decl %ebx
         xor %edx, %edx
         movl %ebx, %eax
         movl $1024, %ecx
@@ -268,6 +268,8 @@ GET:
 
     xor %ecx, %ecx
     xor %eax, %eax
+    xor %ebx, %ebx
+    
     lea v, %edi
     mov (%edi, %ecx, 1), %al
 
