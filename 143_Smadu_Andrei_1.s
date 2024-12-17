@@ -229,6 +229,7 @@ ADD:
         movl %eax, row
         movl %edx, p
 
+        dec %ebx
         xor %edx, %edx
         movl %ebx, %eax
         movl $1024, %ecx
