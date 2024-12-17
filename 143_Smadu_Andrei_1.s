@@ -7,12 +7,11 @@
     k: .space 4 #total numere
     p: .space 4
     u: .space 4
-    descriptor: .space 1
-    dimensiune: .space 4
+    filedesc: .space 1
     size: .space 4
+    size_copy: .space 4
     index: .space 4
     cnt0: .space 4
-    copie_dim: .space 4
     row: .space 4
     formatScanf: .asciz "%d"
     formatPrintf: .asciz "%d: ((%d, %d), (%d, %d))\n"
@@ -27,18 +26,18 @@ ADD:
     pushl %ebp
     mov %esp, %ebp
     
-    push $descriptor
+    push $filedesc
     push $formatScanf
     call scanf
     add $8,%esp
 
-    pushl $dimensiune
+    pushl $size
     push $formatScanf
     call scanf
     add $8, %esp
 
     xor %edx, %edx
-    movl dimensiune, %eax
+    movl size, %eax
     mov $8, %ebx
     div %ebx 
 
@@ -50,6 +49,8 @@ ADD:
     not_inc:
         mov $0, %edx
         lea v, %edi
+
+        jmp check
 
     for_ADD:
         xor %ebx, %ebx
@@ -66,7 +67,7 @@ ADD:
 
         ADD_limit:
             movl $1024, %ecx
-            movl %eax, copie_dim
+            movl %eax, size_copy
             movl %edx, index
             xor %edx, %edx
             movl index, %eax
@@ -74,7 +75,7 @@ ADD:
 
             sub %edx, %ecx
         
-            movl copie_dim, %eax
+            movl size_copy, %eax
 
             cmp %eax, %ecx
             jb next_line
@@ -87,7 +88,7 @@ ADD:
                 je continue_for_limit
         
                 lea v, %edi
-                mov descriptor, %bl
+                mov filedesc, %bl
                 mov %bl, (%edi, %edx, 1)
 
                 inc %edx
@@ -96,13 +97,13 @@ ADD:
             continue_for_limit:
                 movl %edx, k
 
-                jmp exit_ADD   
+                jmp afisare_ADD 
 
         ADD_0:
             movl $0, cnt0
 
             movl $1024, %ecx
-            movl %eax, copie_dim
+            movl %eax, size_copy
             movl %edx, index
             xor %edx, %edx
             movl index, %eax
@@ -112,7 +113,7 @@ ADD:
             mul %ecx
                 
             movl %eax, row
-            mov copie_dim, %eax
+            mov size_copy, %eax
             mov index, %edx
 
             counter_0:
@@ -142,9 +143,9 @@ ADD:
                 
                 for_0:
                     cmp %eax, %ecx
-                    je exit_ADD
+                    je afisare_ADD
 
-                    mov descriptor, %bl
+                    mov filedesc, %bl
                     mov %bl, (%edi, %edx, 1)
 
                     inc %ecx
@@ -189,6 +190,63 @@ ADD:
 
             jmp for_ADD
 
+    check:
+        cmpl $1024, %eax
+        ja error
+        
+        xor %ebx, %ebx
+        xor %ecx, %ecx
+        lea v, %edi
+
+        for_check:
+            cmp k, %ecx
+            je for_ADD
+
+            mov (%edi, %ecx, 1), %bl
+            cmp filedesc, %bl
+            je error
+
+            inc %ecx
+            jmp for_check
+
+    error:
+        pushl $0
+        pushl $0
+        pushl $0
+        pushl $0
+        push $formatPrintf_GET
+        call printf
+        add $20, %esp
+
+        jmp exit_ADD
+
+    afisare_ADD:
+        movl %edx, %ebx
+        xor %edx, %edx
+        movl index, %eax
+        movl $1024, %ecx
+        div %ecx
+        movl %eax, row
+        movl %edx, p
+
+        xor %edx, %edx
+        movl %ebx, %eax
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, u
+
+        xor %ebx, %ebx
+        mov filedesc, %bl
+
+        push u
+        push row
+        push p
+        push row
+        push %ebx
+        push $formatPrintf
+        call printf
+        add $24, %esp
+
     exit_ADD:
         popl %ebp
         popl %edi
@@ -202,7 +260,7 @@ GET:
     push %ebp
     mov %esp, %ebp
 
-    push $descriptor
+    push $filedesc
     push $formatScanf
     call scanf
     add $8, %esp
@@ -213,7 +271,7 @@ GET:
     mov (%edi, %ecx, 1), %al
 
     for_GET:
-        cmp descriptor, %eax
+        cmp filedesc, %eax
         je continue_GET
         
         cmp k, %ecx
@@ -288,7 +346,7 @@ DELETE:
     push %ebp
     mov %esp, %ebp
 
-    push $descriptor
+    push $filedesc
     push $formatScanf
     call scanf
     add $8, %esp
@@ -299,7 +357,7 @@ DELETE:
     for_DELETE:
         xor %eax, %eax
         mov (%edi, %ecx, 1), %al
-        cmp descriptor, %eax
+        cmp filedesc, %eax
         jne not_equal_DELETE
 
         xor %eax, %eax
@@ -347,7 +405,7 @@ DEFRAGMENTATION:
         jne verif
 
         incl size
-        mov %al, descriptor
+        mov %al, filedesc
         
         skip_0:
             inc %ecx
@@ -378,7 +436,7 @@ DEFRAGMENTATION:
         cmpl size, %edx
         je reset
         
-        mov descriptor, %al
+        mov filedesc, %al
         mov %al, (%edi, %edx, 1)
 
         inc %edx
@@ -413,7 +471,7 @@ DEFRAGMENTATION:
         pop %edi
         pop %ebx
 
-        ret
+    ret
 
 .global main 
 
@@ -474,7 +532,7 @@ main_ADD:
     
     for_ADD_main: 
         cmp N, %ecx
-        je continue_ADD_main
+        je exit_op
     
         push %ecx
         push %eax
@@ -486,72 +544,6 @@ main_ADD:
 
         inc %ecx
         jmp for_ADD_main
-
-    continue_ADD_main:
-        xor %ecx, %ecx     
-        lea v, %edi
-        movl $0, p
-
-    afisare_ADD:
-        cmp k, %ecx
-        je exit_op
-
-        xor %eax, %eax
-        xor %ebx, %ebx
-        mov (%edi, %ecx, 1), %al
-        mov 1(%edi, %ecx, 1), %bl
-
-        cmp %eax, %ebx
-        je equal_ADD_main
-        
-        cmp $0, %eax
-        je zero_ADD
-
-        movl %ecx, index
-        movl p, %eax
-        xor %edx, %edx
-        movl $1024, %ecx
-        div %ecx
-        movl %edx, p
-        movl index, %ecx
-
-        movl %ecx, index
-        mov %ecx, %eax
-        xor %edx, %edx
-        movl $1024, %ecx
-        div %ecx
-        movl %edx, u
-        movl %eax, row
-        movl index, %ecx
-
-        mov (%edi, %ecx, 1), %bl
-
-        push %ecx
-        push u
-        push row
-        push p
-        push row
-        push %ebx
-        push $formatPrintf
-        call printf
-        add $24, %esp
-        pop %ecx
-    
-        movl %ecx, index
-        movl $1024, %ecx
-        xor %edx, %edx
-        movl index, %eax
-        div %ecx
-        
-        movl index, %ecx
-
-        zero_ADD: 
-            movl %ecx, p
-            incl p
-
-        equal_ADD_main: 
-            inc %ecx
-            jmp afisare_ADD
 
 main_GET:
     push %ecx
