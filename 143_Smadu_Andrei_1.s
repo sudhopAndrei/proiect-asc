@@ -210,13 +210,17 @@ ADD:
             jmp for_check
 
     error:
+        xor %ebx, %ebx
+        mov filedesc, %bl
+
         pushl $0
         pushl $0
         pushl $0
         pushl $0
-        push $formatPrintf_GET
+        push %ebx
+        push $formatPrintf
         call printf
-        add $20, %esp
+        add $24, %esp
 
         jmp exit_ADD
 
@@ -708,6 +712,10 @@ main_DEFRAGMENTATION:
             jmp afisare_DEFRAG
 
 et_exit:
+    pushl $0
+    call fflush
+    popl %eax
+
     mov $1, %eax
     xor %ebx, %ebx
     int $0x80
