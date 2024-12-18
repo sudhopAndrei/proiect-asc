@@ -48,7 +48,7 @@ ADD:
         mov $0, %edx
         lea v, %edi
 
-        jmp check
+        jmp check1
 
     for_ADD:
         xor %ebx, %ebx
@@ -64,8 +64,11 @@ ADD:
         jmp for_ADD
 
         ADD_limit:
-            addl %edx, %eax
-            movl %edx, index
+            jmp check2
+            
+            pass:
+                addl %edx, %eax
+                movl %edx, index
 
             for_limit:
                 cmp %eax, %edx
@@ -90,7 +93,7 @@ ADD:
                 mov (%edi, %edx, 1), %bl
                                 
                 cmp i, %edx
-                je move_last
+                je update_i
                 
                 cmp $0, %ebx
                 jne continue_ADD_0
@@ -118,12 +121,9 @@ ADD:
                     inc %edx
                     jmp for_0 
                 
-            move_last:
+            update_i:
                 movl index, %edx
-
-                movl i, %ecx
-                sub cnt0, %ecx
-                movl %ecx, i
+                movl %edx, i
 
                 jmp for_ADD
 
@@ -132,13 +132,7 @@ ADD:
                 addl cnt0, %edx
                 jmp for_ADD  
 
-    check:
-        movl $1024, %ecx
-        subl i, %ecx
-
-        cmp %eax, %ecx
-        jb error
-
+    check1:
         xor %ebx, %ebx
         xor %ecx, %ecx
 
@@ -153,12 +147,25 @@ ADD:
             inc %ecx
             jmp for_check
 
+    check2:
+        movl $1024, %ecx
+        subl i, %ecx
+
+        cmp %eax, %ecx
+        jb error
+
+        jmp pass
+
     error:
+        xor %ebx, %ebx
+        mov filedesc, %bl
+
         pushl $0
         pushl $0
-        push $formatPrintf_GET
+        push %ebx
+        push $formatPrintf
         call printf
-        add $12, %esp
+        add $16, %esp
 
         jmp exit_ADD  
 
@@ -166,7 +173,7 @@ ADD:
         xor %ebx, %ebx
         mov filedesc, %bl
         dec %edx
-
+        
         push %edx
         push index
         push %ebx
@@ -175,7 +182,6 @@ ADD:
         add $16, %esp
 
     exit_ADD:
-        
         popl %ebp
         popl %edi
         popl %ebx
@@ -509,6 +515,10 @@ main_DEFRAGMENTATION:
             jmp afisare_DEFRAG
 
 et_exit:
+    pushl $0
+    call fflush
+    popl %eax
+    
     mov $1, %eax
     xor %ebx, %ebx
     int $0x80
