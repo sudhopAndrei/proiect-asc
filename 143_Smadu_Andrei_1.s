@@ -8,7 +8,7 @@
     p: .space 4
     u: .space 4
     filedesc: .space 1
-    size: .space 256
+    size: .space 4
     size_copy: .space 4
     index: .space 4
     cnt0: .space 4
