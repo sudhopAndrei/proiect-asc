@@ -24,15 +24,12 @@ ADD:
     pushl %ebp
     mov %esp, %ebp
     
-    push $filedesc
-    push $formatScanf
-    call scanf
-    add $8,%esp
+    xor %eax, %eax
+    movl 16(%ebp), %eax
+    mov %al, filedesc
 
-    pushl $size
-    push $formatScanf
-    call scanf
-    add $8, %esp
+    movl 20(%ebp), %eax
+    mov %eax, size
 
     xor %edx, %edx
     movl size, %eax
@@ -397,13 +394,28 @@ main_ADD:
     for_ADD_main: 
         cmp N, %ecx
         je exit_op
-    
+
         push %ecx
-        push %eax
+
+        push $filedesc
+        push $formatScanf
+        call scanf
+        add $8,%esp
+
+        pushl $size
+        push $formatScanf
+        call scanf
+        add $8, %esp
+    
+        xor %eax, %eax
+        mov filedesc, %al
+
         push %edx
+        pushl size
+        push %eax
         call ADD
+        add $8, %esp
         pop %edx
-        pop %eax
         pop %ecx
 
         inc %ecx
