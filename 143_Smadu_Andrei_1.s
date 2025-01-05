@@ -8,15 +8,21 @@
     p: .space 4
     u: .space 4
     filedesc: .space 1
-    size: .space 4
+    size: .space 256
     size_copy: .space 4
     index: .space 4
     cnt0: .space 4
     row: .space 4
+    path: .space 256
+    dirFileDesc: .space 4
+    dirPointer: .space 4
+    dirEntryPointer: .space 4
     formatScanf: .asciz "%d"
+    formatScanfString: .asciz "%s"
     formatPrintf: .asciz "%d: ((%d, %d), (%d, %d))\n"
     formatPrintf_GET: .asciz "((%d, %d), (%d, %d))\n"
     formatPrintf_EROARE: .asciz "Operatie invalida!\n"
+    formatPrintfCONCRETE: .asciz "%d\n"
 
 .text
 
@@ -478,7 +484,338 @@ DEFRAGMENTATION:
         pop %edi
         pop %ebx
 
-    ret
+        ret
+
+CONCRETE:
+    push %ebx
+    push %edi
+    push %ebp
+    mov %esp, %ebp
+
+    push $path
+    push $formatScanfString
+    call scanf
+    add $8, %esp
+
+    lea path, %edi
+    push %edi
+    call opendir
+    add $4, %esp
+    mov %eax, dirPointer
+
+    mov dirPointer, %edi
+    push %edi
+    call dirfd
+    add $4, %esp
+    mov %eax, dirFileDesc
+
+    loop_dir:
+        movl dirPointer, %edi
+        pushl %edi
+        call readdir
+        addl $4, %esp
+        movl %eax, dirEntryPointer
+
+        cmp $0, %eax
+        je exit_dir
+
+        movl dirEntryPointer, %edi
+        addl $11, %edi
+
+        movl $46, %eax
+        cmp %eax, (%edi)
+        je loop_dir
+        cmp %eax, 1(%edi)
+        je loop_dir
+
+        movl dirFileDesc, %eax
+        pushl %edi
+        pushl %eax
+        call openat
+        addl $8, %esp
+        movl %eax, filedesc
+        incl filedesc
+
+        pushl $2 
+        pushl $0
+        pushl %eax 
+        call lseek
+        addl $12, %esp
+        movl $1024, %ecx
+        xor %edx, %edx
+        div %ecx
+        movl %eax, size
+        
+        xor %eax, %eax
+        mov filedesc, %al
+        
+        push %eax
+        pushl $formatPrintfCONCRETE
+        call printf
+        addl $8, %esp
+
+        pushl size
+        pushl $formatPrintfCONCRETE
+        call printf
+        addl $8, %esp
+
+        push %ecx
+        push %eax
+        push %edx
+        call ADD_CONCRETE
+        pop %edx
+        pop %eax
+        pop %ecx
+
+        xor %eax, %eax
+        mov filedesc, %al
+        push %eax
+        call close
+        add $4, %esp
+
+        jmp loop_dir
+
+    exit_dir:
+        mov dirPointer, %edi
+        push %edi
+        call closedir
+        add $4, %esp
+
+    exit_CONCRETE:
+        pop %ebp
+        pop %edi
+        pop %ebx
+
+        ret
+
+ADD_CONCRETE:
+    push %ebx
+    push %edi
+    push %ebp
+    mov %esp, %ebp
+
+    xor %edx, %edx
+    movl size, %eax
+    mov $8, %ebx
+    div %ebx 
+
+    cmp $0, %edx
+    je not_inc_CONC
+    
+    inc %eax
+    
+    not_inc_CONC:
+        mov $0, %edx
+        lea v, %edi
+        
+        jmp check_CONC
+
+        for_ADD_CONC:
+            xor %ebx, %ebx
+            mov (%edi, %edx, 1), %bl
+
+            cmp k, %edx
+            je ADD_limit_CONC
+        
+            cmp $0, %ebx
+            je ADD_0_CONC
+
+            inc %edx
+            jmp for_ADD_CONC
+
+        ADD_limit_CONC:
+            movl $1024, %ecx
+            movl %eax, size_copy
+            movl %edx, index
+            xor %edx, %edx
+            movl index, %eax
+            div %ecx
+
+            sub %edx, %ecx
+        
+            movl size_copy, %eax
+
+            cmp %eax, %ecx
+            jb next_line_CONC
+            
+            movl index, %edx
+            addl %edx, %eax
+
+            for_limit_CONC:
+                cmp %eax, %edx
+                je continue_for_limit_CONC
+        
+                lea v, %edi
+                mov filedesc, %bl
+                mov %bl, (%edi, %edx, 1)
+
+                inc %edx
+                jmp for_limit
+           
+            continue_for_limit_CONC:
+                movl %edx, k
+
+                jmp afisare_ADD_CONC
+
+        ADD_0_CONC:
+            movl $0, cnt0
+
+            movl $1024, %ecx
+            movl %eax, size_copy
+            movl %edx, index
+            xor %edx, %edx
+            movl index, %eax
+            div %ecx
+                
+            inc %eax
+            mul %ecx
+                
+            movl %eax, row
+            mov size_copy, %eax
+            mov index, %edx
+
+            counter_0_CONC:
+                cmp row, %edx
+                je move_last_CONC
+      
+                xor %ebx, %ebx
+                mov (%edi, %edx, 1), %bl                
+
+                cmp $0, %ebx
+                jne continue_ADD_0_CONC
+
+                cmp k, %edx
+                je update_k_CONC
+
+                incl cnt0
+                inc %edx
+                jmp counter_0_CONC
+            
+            continue_ADD_0_CONC:
+                cmp %eax, cnt0
+                jb skip_space_CONC
+
+                xor %ecx, %ecx
+                movl index, %edx
+                lea v, %edi
+                
+                for_0_CONC:
+                    cmp %eax, %ecx
+                    je afisare_ADD_CONC
+
+                    mov filedesc, %bl
+                    mov %bl, (%edi, %edx, 1)
+
+                    inc %ecx
+                    inc %edx
+                    jmp for_0_CONC 
+                
+            move_last_CONC:
+                cmp cnt0, %eax
+                jbe continue_ADD_0_CONC
+
+                jmp for_ADD_CONC    
+
+            skip_space_CONC:
+                movl index, %edx
+                addl cnt0, %edx
+                jmp for_ADD_CONC    
+
+            update_k_CONC:
+                movl cnt0, %ecx
+                subl %ecx, k
+                mov index, %edx
+                jmp for_ADD_CONC
+    
+    next_line_CONC:
+        movl %edx, %ecx
+        movl index, %edx
+
+        for_next_CONC:
+            cmp $1024, %ecx
+            je exit_next_CONC
+            
+            xor %ebx, %ebx
+            mov %bl, (%edi, %edx, 1)
+
+            inc %edx
+            inc %ecx
+
+            jmp for_next_CONC
+        
+        exit_next_CONC:
+            mov %edx, k
+
+            jmp for_ADD_CONC
+
+    check_CONC:
+        cmpl $1024, %eax
+        ja error_CONC
+        
+        xor %ebx, %ebx
+        xor %ecx, %ecx
+        lea v, %edi
+
+        for_check_CONC:
+            cmp k, %ecx
+            je for_ADD_CONC
+
+            mov (%edi, %ecx, 1), %bl
+            cmp filedesc, %bl
+            je error_CONC
+
+            inc %ecx
+            jmp for_check_CONC
+
+    error_CONC:
+        xor %ebx, %ebx
+        mov filedesc, %bl
+
+        pushl $0
+        pushl $0
+        pushl $0
+        pushl $0
+        push %ebx
+        push $formatPrintf
+        call printf
+        add $24, %esp
+
+        jmp exit_ADD_CONC
+
+    afisare_ADD_CONC:
+        movl %edx, %ebx
+        xor %edx, %edx
+        movl index, %eax
+        movl $1024, %ecx
+        div %ecx
+        movl %eax, row
+        movl %edx, p
+        
+        decl %ebx
+        xor %edx, %edx
+        movl %ebx, %eax
+        movl $1024, %ecx
+        div %ecx
+        movl %edx, u
+
+        xor %ebx, %ebx
+        mov filedesc, %bl
+
+        push u
+        push row
+        push p
+        push row
+        push %ebx
+        push $formatPrintf
+        call printf
+        add $24, %esp
+
+    exit_ADD_CONC:
+        pop %ebp
+        pop %edi
+        pop %ebx
+        
+        ret
 
 .global main 
 
@@ -515,8 +852,8 @@ main:
         cmp $4, %eax
         je main_DEFRAGMENTATION
 
-        #cmp $5, %eax
-        #je main_CONCRETE
+        cmp $5, %eax
+        je main_CONCRETE
         
         push %ecx
         push $formatPrintf_EROARE
@@ -710,6 +1047,17 @@ main_DEFRAGMENTATION:
         equal_DEFRAG_main: 
             inc %ecx
             jmp afisare_DEFRAG
+
+main_CONCRETE:
+    push %ecx
+    push %eax
+    push %edx
+    call CONCRETE
+    pop %edx
+    pop %eax
+    pop %ecx
+
+    jmp exit_op
 
 et_exit:
     pushl $0
