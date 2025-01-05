@@ -509,16 +509,16 @@ CONCRETE:
 
     loop_dir:
         movl dirPointer, %edi
-        pushl %edi
+        push %edi
         call readdir
-        addl $4, %esp
+        add $4, %esp
         movl %eax, dirEntryPointer
 
         cmp $0, %eax
         je exit_dir
 
-        movl dirEntryPointer, %edi
-        addl $11, %edi
+        mov dirEntryPointer, %edi
+        add $11, %edi
 
         movl $46, %eax
         cmp %eax, (%edi)
@@ -527,15 +527,15 @@ CONCRETE:
         je loop_dir
 
         movl dirFileDesc, %eax
-        pushl %edi
-        pushl %eax
+        push %edi
+        push %eax
         call openat
         addl $8, %esp
 
         movl %eax, index
         movl $255, %ebx
         xor %edx, %edx
-        divl %ebx
+        div %ebx
         mov %dl, filedesc
         incl filedesc
 
