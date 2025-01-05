@@ -8,8 +8,8 @@
     p: .space 4
     u: .space 4
     filedesc: .space 1
-    size: .space 4
-    size_copy: .space 4
+    size: .space 8
+    size_copy: .space 8
     index: .space 4
     cnt0: .space 4
     row: .space 4
@@ -22,7 +22,7 @@
     formatPrintf: .asciz "%d: ((%d, %d), (%d, %d))\n"
     formatPrintf_GET: .asciz "((%d, %d), (%d, %d))\n"
     formatPrintf_EROARE: .asciz "Operatie invalida!\n"
-    formatPrintfCONCRETE: .asciz "%d\n"
+    formatPrintf_CONCRETE: .asciz "%d\n"
     fileStruct: .space 128
 
 .text
@@ -555,12 +555,12 @@ CONCRETE:
         mov filedesc, %al
         
         push %eax
-        push $formatPrintfCONCRETE
+        push $formatPrintf_CONCRETE
         call printf
         add $8, %esp
 
         pushl size
-        push $formatPrintfCONCRETE
+        push $formatPrintf_CONCRETE
         call printf
         add $8, %esp
 
