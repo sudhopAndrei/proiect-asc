@@ -530,7 +530,7 @@ CONCRETE:
         push %edi
         push %eax
         call openat
-        addl $8, %esp
+        add $8, %esp
 
         movl %eax, index
         movl $255, %ebx
