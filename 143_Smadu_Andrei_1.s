@@ -23,6 +23,7 @@
     formatPrintf_GET: .asciz "((%d, %d), (%d, %d))\n"
     formatPrintf_EROARE: .asciz "Operatie invalida!\n"
     formatPrintfCONCRETE: .asciz "%d\n"
+    fileStruct: .space 128
 
 .text
 
@@ -530,14 +531,21 @@ CONCRETE:
         pushl %eax
         call openat
         addl $8, %esp
-        movl %eax, filedesc
+
+        movl %eax, index
+        movl $255, %ebx
+        xor %edx, %edx
+        divl %ebx
+        mov %dl, filedesc
         incl filedesc
 
-        pushl $2 
-        pushl $0
-        pushl %eax 
-        call lseek
-        addl $12, %esp
+        movl $108, %eax
+        movl index, %ebx
+        lea fileStruct, %ecx
+        int $0x80
+
+        movl 20(%ecx), %eax
+
         movl $1024, %ecx
         xor %edx, %edx
         div %ecx
@@ -547,14 +555,14 @@ CONCRETE:
         mov filedesc, %al
         
         push %eax
-        pushl $formatPrintfCONCRETE
+        push $formatPrintfCONCRETE
         call printf
-        addl $8, %esp
+        add $8, %esp
 
         pushl size
-        pushl $formatPrintfCONCRETE
+        push $formatPrintfCONCRETE
         call printf
-        addl $8, %esp
+        add $8, %esp
 
         xor %eax, %eax
         mov filedesc, %al
@@ -567,12 +575,6 @@ CONCRETE:
         add $8, %esp
         pop %edx
         pop %ecx
-
-        xor %eax, %eax
-        mov filedesc, %al
-        push %eax
-        call close
-        add $4, %esp
 
         jmp loop_dir
 
